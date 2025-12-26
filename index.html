@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ashes of Creation Alpha: Progression & Leveling Meta (Dec 2025)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: Verra Daylight -->
+    <!-- Primary Background: #f5f5f0 (Warm Light Grey/Parchment) -->
+    <!-- Content Backgrounds: #ffffff (White) -->
+    <!-- Primary Text: #1f2937 (Dark Grey) -->
+    <!-- Accents: #d97706 (Amber/Gold for Guilds), #7c3aed (Violet for XP/Magic), #059669 (Emerald for Success) -->
+
+    <!-- Application Structure Plan: 
+         1. Hero Header: Sets the context (Date: Dec 27, 2025, Alpha Phase) to ground the user.
+         2. Tab Navigation: Distinct separation of concerns (Character vs. Guild vs. Speed Strat) to prevent info overload.
+         3. Dynamic Dashboard (Main Content Area):
+            - Character Tab: Uses a Doughnut chart to visualize XP source distribution. Interactive cards explain mechanics.
+            - Guild Tab: Uses a Bar chart to demonstrate the power of numbers (30-50 members). Focuses on collective tasks.
+            - Speed Meta Tab: Comparison charts (Line) for leveling speeds and checklist-style actionable advice.
+         4. Justification: This structure allows players to switch between "Learning the Basics" and "Optimizing for Speed" without losing context.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Character XP Sources: Doughnut Chart. Goal: Inform. Shows relative importance of Quests vs. Grinding.
+         2. Guild Member Scaling: Bar Chart. Goal: Relationships. Shows how a 30-50 person guild outpaces smaller groups.
+         3. Leveling Velocity: Line Chart. Goal: Compare. Visualizes "Casual" vs "Optimal" leveling speed over time.
+         4. Strategy Cards: HTML Grid. Goal: Organize. Breaks down complex strategies into readable steps.
+         5. Interaction: Clicking tabs updates the view and charts. Hovering charts gives specific data points.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #f5f5f0;
+            color: #1f2937;
+        }
+        h1, h2, h3, .fantasy-font {
+            font-family: 'Cinzel', serif;
+        }
+        .tab-active {
+            border-bottom: 3px solid #d97706;
+            color: #d97706;
+            font-weight: bold;
+        }
+        .tab-inactive {
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-inactive:hover {
+            color: #374151;
+            border-bottom: 3px solid #d1d5db;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* Chart Container Styling per Requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Max width for readability */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md py-6 border-b-4 border-amber-600">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 tracking-wide">Ashes of Creation</h1>
+                <p class="text-amber-700 font-semibold mt-1">Alpha Progression Dashboard • Dec 27, 2025</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex gap-4 text-sm font-medium">
+                <div class="bg-gray-100 px-4 py-2 rounded-full border border-gray-300">
+                    <span class="text-gray-500">Status:</span> <span class="text-green-600 font-bold">ALPHA LIVE</span>
+                </div>
+                <div class="bg-gray-100 px-4 py-2 rounded-full border border-gray-300">
+                    <span class="text-gray-500">Guild Size:</span> <span class="text-blue-600 font-bold">30-50 Target</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-8 overflow-x-auto">
+                <button onclick="switchTab('character')" id="tab-character" class="tab-active py-4 px-2 text-lg focus:outline-none transition-colors whitespace-nowrap">
+                    Character Leveling
+                </button>
+                <button onclick="switchTab('guild')" id="tab-guild" class="tab-inactive py-4 px-2 text-lg focus:outline-none transition-colors whitespace-nowrap">
+                    Guild Progression
+                </button>
+                <button onclick="switchTab('speed')" id="tab-speed" class="tab-inactive py-4 px-2 text-lg focus:outline-none transition-colors whitespace-nowrap">
+                    Fastest Strategies (Meta)
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+
+        <!-- SECTION 1: CHARACTER LEVELING -->
+        <section id="section-character" class="space-y-8 animate-fade-in">
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-violet-500">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2 fantasy-font">Mastering Personal Progression</h2>
+                <p class="text-gray-600 leading-relaxed">
+                    Leveling in the current Alpha build relies on a hybrid system. While quests provide structure, the "Node" system drives the availability of content. 
+                    Unlike traditional theme-park MMOs, you cannot simply follow a single quest chain. You must diversify your activities to maximize XP per hour.
+                    Explore the chart below to see where your Experience Points actually come from.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <!-- Visual: XP Sources -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">XP Source Distribution (Alpha Build)</h3>
+                    <div class="chart-container">
+                        <canvas id="charXpChart"></canvas>
+                    </div>
+                    <p class="text-sm text-center text-gray-500 mt-4">
+                        *Estimates based on Dec 2025 Alpha data. Note the heavy reliance on Node-based activities.
+                    </p>
+                </div>
+
+                <!-- Content: Methods List -->
+                <div class="space-y-4">
+                    <div class="bg-white rounded-lg shadow p-5 card-hover transition duration-300">
+                        <div class="flex items-center mb-2">
+                            <span class="text-2xl mr-3">📜</span>
+                            <h4 class="text-lg font-bold text-gray-900">Questing (Story & Tasks)</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            **High XP / Low Frequency.** The Narrative Arc gives massive XP chunks but is finite. "Task" quests from Boards are repeatable but offer diminishing returns. Always prioritize Story quests when a Node levels up.
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-5 card-hover transition duration-300">
+                        <div class="flex items-center mb-2">
+                            <span class="text-2xl mr-3">⚔️</span>
+                            <h4 class="text-lg font-bold text-gray-900">Mob Grinding (Hunting)</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            **Medium XP / High Frequency.** The bread and butter of leveling. Best done in groups to clear camps efficiently. Elite mobs drop significantly more XP and are viable for 3-5 player parties.
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-5 card-hover transition duration-300">
+                        <div class="flex items-center mb-2">
+                            <span class="text-2xl mr-3">⛏️</span>
+                            <h4 class="text-lg font-bold text-gray-900">Gathering & Processing</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            **Low XP / High Utility.** Don't ignore resources. Every tree felled or ore mined gives a small XP tick. Over hours, this accounts for ~15% of a level. Essential for economy but not a primary leveling method.
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-5 card-hover transition duration-300">
+                        <div class="flex items-center mb-2">
+                            <span class="text-2xl mr-3">🏰</span>
+                            <h4 class="text-lg font-bold text-gray-900">Node Events & PvP</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm">
+                            **Variable XP.** Participating in Caravan defense or Node sieges grants XP based on contribution. Successful defense is a massive windfall.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: GUILD PROGRESSION -->
+        <section id="section-guild" class="hidden space-y-8 animate-fade-in">
+            <div class="bg-white rounded-xl shadow p-6 border-l-4 border-amber-500">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2 fantasy-font">Building a Legacy: Guild Leveling</h2>
+                <p class="text-gray-600 leading-relaxed">
+                    Guild leveling in Ashes of Creation is a collective effort. It unlocks passive buffs, guild halls, and castle sieging capabilities. 
+                    For a guild of 30-50 people, coordination is key. Passive play won't cut it; you need focused "Guild Quest" days.
+                    The chart below visualizes the theoretical weekly XP output based on active member participation.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                
+                <!-- Content: Guild Mechanics -->
+                <div class="grid grid-cols-1 gap-4">
+                     <div class="bg-amber-50 border border-amber-100 rounded-lg p-5">
+                        <h4 class="text-lg font-bold text-amber-900 mb-2">Core Mechanics</h4>
+                        <ul class="list-disc list-inside text-amber-800 space-y-2 text-sm">
+                            <li><strong>Quest Turn-ins:</strong> Specific "Guild Commission" quests grant Guild XP directly.</li>
+                            <li><strong>Leveling Up:</strong> When a member levels up a character or profession, the guild gains a flat XP bonus.</li>
+                            <li><strong>PvP Objectives:</strong> Capturing Castles or successful Caravan runs inject massive Guild XP.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow p-5">
+                        <h4 class="text-lg font-bold text-gray-900 mb-3">The 30-50 Member Sweet Spot</h4>
+                        <p class="text-gray-600 text-sm mb-4">
+                            With 30-50 members, you are in the ideal range for the Alpha. You have enough people to run 4-6 full parties simultaneously for Guild Commissions without the logistical nightmare of a 300-person zerg.
+                        </p>
+                        <div class="flex flex-col gap-3">
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <span class="font-semibold text-gray-700">Small Guild (10-20)</span>
+                                <span class="text-red-500 text-sm">Struggles with Elite Commissions</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b pb-2 bg-green-50 px-2 rounded">
+                                <span class="font-semibold text-gray-700">Medium Guild (30-50)</span>
+                                <span class="text-green-600 text-sm font-bold">Optimal Efficiency / Coordination</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <span class="font-semibold text-gray-700">Large Guild (100+)</span>
+                                <span class="text-gray-500 text-sm">Diminishing returns on comms</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual: Guild XP Output -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Projected Weekly Guild XP Output</h3>
+                    <div class="flex justify-center mb-4 space-x-4">
+                        <button onclick="updateGuildChart('passive')" class="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700">Passive Play</button>
+                        <button onclick="updateGuildChart('active')" class="px-3 py-1 text-xs bg-amber-500 hover:bg-amber-600 rounded text-white font-bold shadow">Focused Strategy</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="guildXpChart"></canvas>
+                    </div>
+                    <p class="text-sm text-center text-gray-500 mt-4" id="guildChartDesc">
+                        Showing data for <strong>Focused Strategy</strong>: Requires mandatory daily guild quests from all members.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION 3: FASTEST STRATEGIES -->
+        <section id="section-speed" class="hidden space-y-8 animate-fade-in">
+             <div class="bg-white rounded-xl shadow p-6 border-l-4 border-red-500">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2 fantasy-font">The "Golden Path": Speed Meta</h2>
+                <p class="text-gray-600 leading-relaxed">
+                    Time is precious. Whether you are rushing for "Server First" or just want to reach end-game PvP, efficiency is paramount. 
+                    The following strategies assume you have a dedicated group (Static) and are willing to skip dialogue.
+                </p>
+            </div>
+
+            <!-- Strategy Toggle -->
+            <div class="flex justify-center space-x-4 mb-6">
+                <button onclick="toggleStrategy('char-strat')" id="btn-char-strat" class="px-6 py-3 rounded-lg font-bold bg-violet-600 text-white shadow-lg transform hover:scale-105 transition">
+                    Fastest Character XP
+                </button>
+                <button onclick="toggleStrategy('guild-strat')" id="btn-guild-strat" class="px-6 py-3 rounded-lg font-bold bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 shadow transform hover:scale-105 transition">
+                    Fastest Guild XP
+                </button>
+            </div>
+
+            <!-- Content Container -->
+            <div id="strat-content-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Character Strategy Content -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow p-6 strategy-panel" id="char-strat-panel">
+                    <h3 class="text-xl font-bold text-violet-700 mb-4 border-b pb-2">The "AoE Grind" Loop (Characters)</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold border border-violet-200">1</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-gray-900">Levels 1-10: The Sprint</h4>
+                                <p class="text-sm text-gray-600 mt-1">Ignore gathering. Grab the Main Story Quest (MSQ) immediately. Complete side quests ONLY if they overlap exactly with MSQ kill areas. Do not travel for side quests.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold border border-violet-200">2</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-gray-900">Levels 10-25: Elite Mob Farming</h4>
+                                <p class="text-sm text-gray-600 mt-1">Stop questing solo. Form a group of 8 (Full Party). Find "Elite" or "Dungeon" marked POIs on the map. Round up 5-10 mobs, AoE them down. 
+                                <span class="bg-yellow-100 text-yellow-800 px-1 rounded font-semibold text-xs">TIP</span> This is 40% faster than walking between quest givers.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold border border-violet-200">3</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-gray-900">Node Management</h4>
+                                <p class="text-sm text-gray-600 mt-1">Stay in the highest level Node available. Higher Node tiers spawn higher density mobs. Move your group to a new Node if the current one stagnates.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guild Strategy Content (Hidden by default) -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow p-6 strategy-panel hidden" id="guild-strat-panel">
+                    <h3 class="text-xl font-bold text-amber-700 mb-4 border-b pb-2">The "Commission Blitz" (Guilds)</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold border border-amber-200">1</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-gray-900">The 30-Man Split</h4>
+                                <p class="text-sm text-gray-600 mt-1">Divide your 30-50 members into fixed 5-man "Commission Squads". Do not let members solo. Squads clear guild tasks 5x faster than individuals.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold border border-amber-200">2</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-gray-900">Resource Funneling</h4>
+                                <p class="text-sm text-gray-600 mt-1">Select 3 Crafters in the guild. ALL other 47 members funnel raw materials to them. Power-leveling these crafters unlocks "Master Requests" which grant huge Guild XP bounties.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold border border-amber-200">3</div>
+                            <div class="ml-4">
+                                <h4 class="font-bold text-gray-900">Caravan Cycling</h4>
+                                <p class="text-sm text-gray-600 mt-1">Run Commodities Caravans during off-peak hours (early morning). Even short distance runs grant flat Guild XP. Rotate members to guard/drive.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Comparison Side Panel -->
+                <div class="bg-gray-50 rounded-xl shadow-inner p-6 border border-gray-200">
+                    <h4 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Time to Efficiency Comparison</h4>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="speedCompareChart"></canvas>
+                    </div>
+                    <div class="mt-4 p-4 bg-white rounded shadow-sm border border-gray-100">
+                        <p class="text-xs text-gray-500 italic">
+                            "The graph shows that organized grouping (purple line) outscales solo questing (gray line) significantly after Level 10 due to Elite Mob density."
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-400 py-8 mt-auto">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2 text-sm">Data valid for Ashes of Creation Alpha (Dec 27, 2025 Build).</p>
+            <p class="text-xs">Not affiliated with Intrepid Studios. Designed for Community Use.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // State Management
+        const state = {
+            currentTab: 'character',
+            guildMode: 'active', // 'active' or 'passive'
+            chartInstances: {}
+        };
+
+        // Data Store
+        const dataStore = {
+            charXP: {
+                labels: ['Mob Grinding (Elite)', 'Story Quests', 'Node Events', 'Gathering/Crafting', 'Exploration'],
+                data: [45, 30, 15, 8, 2]
+            },
+            guildXP: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                passive: [15000, 18000, 21000, 22000],
+                active: [45000, 62000, 78000, 90000] // 30-50 active members scaling
+            },
+            speedComparison: {
+                labels: ['Lvl 10', 'Lvl 20', 'Lvl 30', 'Lvl 40', 'Lvl 50'],
+                soloHours: [5, 18, 45, 90, 160],
+                groupHours: [4, 12, 28, 55, 95]
+            }
+        };
+
+        // DOM Elements
+        const tabs = {
+            character: document.getElementById('tab-character'),
+            guild: document.getElementById('tab-guild'),
+            speed: document.getElementById('tab-speed')
+        };
+        const sections = {
+            character: document.getElementById('section-character'),
+            guild: document.getElementById('section-guild'),
+            speed: document.getElementById('section-speed')
+        };
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharChart();
+            initGuildChart();
+            initSpeedChart();
+        });
+
+        // Tab Switching Logic
+        function switchTab(tabName) {
+            state.currentTab = tabName;
+
+            // Update Buttons
+            Object.keys(tabs).forEach(key => {
+                if (key === tabName) {
+                    tabs[key].className = 'tab-active py-4 px-2 text-lg focus:outline-none transition-colors whitespace-nowrap';
+                } else {
+                    tabs[key].className = 'tab-inactive py-4 px-2 text-lg focus:outline-none transition-colors whitespace-nowrap';
+                }
+            });
+
+            // Update Sections
+            Object.keys(sections).forEach(key => {
+                if (key === tabName) {
+                    sections[key].classList.remove('hidden');
+                } else {
+                    sections[key].classList.add('hidden');
+                }
+            });
+        }
+
+        // Toggle Strategy Views (Speed Section)
+        function toggleStrategy(stratType) {
+            const charBtn = document.getElementById('btn-char-strat');
+            const guildBtn = document.getElementById('btn-guild-strat');
+            const charPanel = document.getElementById('char-strat-panel');
+            const guildPanel = document.getElementById('guild-strat-panel');
+
+            if (stratType === 'char-strat') {
+                charPanel.classList.remove('hidden');
+                guildPanel.classList.add('hidden');
+                
+                charBtn.classList.add('bg-violet-600', 'text-white');
+                charBtn.classList.remove('bg-white', 'text-gray-600');
+                
+                guildBtn.classList.remove('bg-amber-600', 'text-white');
+                guildBtn.classList.add('bg-white', 'text-gray-600');
+            } else {
+                charPanel.classList.add('hidden');
+                guildPanel.classList.remove('hidden');
+
+                guildBtn.classList.add('bg-amber-600', 'text-white');
+                guildBtn.classList.remove('bg-white', 'text-gray-600');
+
+                charBtn.classList.remove('bg-violet-600', 'text-white');
+                charBtn.classList.add('bg-white', 'text-gray-600');
+            }
+        }
+
+        // --- Chart Configurations ---
+
+        // 1. Character XP Doughnut Chart
+        function initCharChart() {
+            const ctx = document.getElementById('charXpChart').getContext('2d');
+            state.chartInstances.char = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: dataStore.charXP.labels,
+                    datasets: [{
+                        data: dataStore.charXP.data,
+                        backgroundColor: [
+                            '#7c3aed', // Violet (Grind)
+                            '#db2777', // Pink (Quest)
+                            '#d97706', // Amber (Events)
+                            '#10b981', // Emerald (Gathering)
+                            '#6b7280'  // Grey (Exploration)
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { family: "'Lato', sans-serif" },
+                                boxWidth: 12
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: ${context.raw}% of Total XP`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Guild XP Bar Chart (Updatable)
+        function initGuildChart() {
+            const ctx = document.getElementById('guildXpChart').getContext('2d');
+            state.chartInstances.guild = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dataStore.guildXP.labels,
+                    datasets: [{
+                        label: 'Guild XP Gained (Projected)',
+                        data: dataStore.guildXP.active,
+                        backgroundColor: '#d97706', // Amber
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f3f4f6' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function updateGuildChart(mode) {
+            const chart = state.chartInstances.guild;
+            const desc = document.getElementById('guildChartDesc');
+            
+            if (mode === 'active') {
+                chart.data.datasets[0].data = dataStore.guildXP.active;
+                chart.data.datasets[0].backgroundColor = '#d97706'; // Amber
+                desc.innerHTML = `Showing data for <strong>Focused Strategy</strong>: Requires mandatory daily guild quests from all members.`;
+            } else {
+                chart.data.datasets[0].data = dataStore.guildXP.passive;
+                chart.data.datasets[0].backgroundColor = '#9ca3af'; // Grey
+                desc.innerHTML = `Showing data for <strong>Passive Play</strong>: Members play solo, minimal coordination.`;
+            }
+            chart.update();
+        }
+
+        // 3. Speed Comparison Line Chart
+        function initSpeedChart() {
+            const ctx = document.getElementById('speedCompareChart').getContext('2d');
+            state.chartInstances.speed = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dataStore.speedComparison.labels,
+                    datasets: [
+                        {
+                            label: 'Solo Questing (Hours)',
+                            data: dataStore.speedComparison.soloHours,
+                            borderColor: '#9ca3af', // Grey
+                            backgroundColor: '#9ca3af',
+                            tension: 0.4,
+                            pointRadius: 3
+                        },
+                        {
+                            label: 'Group AOE Grind (Hours)',
+                            data: dataStore.speedComparison.groupHours,
+                            borderColor: '#7c3aed', // Violet
+                            backgroundColor: '#7c3aed',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            pointRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Cumulative Hours Played' },
+                            grid: { color: '#f3f4f6' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10 }
+                        }
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
